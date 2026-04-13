@@ -55,20 +55,20 @@ def main() -> None:
     image_gray = load_image_gray(input_path)
     image_float = image_gray.astype(np.float32) / 255.0
 
-    # (c) Apply Gaussian smoothing using manually computed kernel
-    smoothed_manual = ndimage.convolve(image_float, kernel_5x5, mode='nearest')
+    # (c) Apply Gaussian smoothing using manually computed kernel (11x11 for visible effect)
+    smoothed_manual = ndimage.convolve(image_float, gaussian_kernel(11, 3.0), mode='nearest')
     smoothed_manual_uint8 = (smoothed_manual * 255).astype(np.uint8)
-    save_image(smoothed_manual_uint8, root / "runway_gaussian_manual_5x5.png")
+    save_image(smoothed_manual_uint8, root / "runway_gaussian_manual_11x11.png")
 
-    # (d) Apply using OpenCV's cv.GaussianBlur()
-    smoothed_opencv = cv2.GaussianBlur(image_gray, (5, 5), 2.0)
-    save_image(smoothed_opencv, root / "runway_gaussian_opencv_5x5.png")
+    # (d) Apply using OpenCV's cv.GaussianBlur() (11x11 with sigma=3.0)
+    smoothed_opencv = cv2.GaussianBlur(image_gray, (11, 11), 3.0)
+    save_image(smoothed_opencv, root / "runway_gaussian_opencv_11x11.png")
 
     print("Saved:")
     print(" - gaussian_kernel_5x5.txt")
     print(" - gaussian_kernel_51x51_3d.png")
-    print(" - runway_gaussian_manual_5x5.png")
-    print(" - runway_gaussian_opencv_5x5.png")
+    print(" - runway_gaussian_manual_11x11.png")
+    print(" - runway_gaussian_opencv_11x11.png")
 
 if __name__ == "__main__":
     main()
