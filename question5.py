@@ -37,7 +37,7 @@ def visualize_kernel_3d(kernel: np.ndarray, filename: str) -> None:
 
 def main() -> None:
     root = Path(__file__).resolve().parent
-    input_path = root / "Woman.jpg"
+    input_path = root / "runway.png"
     if not input_path.exists():
         raise FileNotFoundError(f"Cannot find image at {input_path}")
 
@@ -58,17 +58,17 @@ def main() -> None:
     # (c) Apply Gaussian smoothing using manually computed kernel
     smoothed_manual = ndimage.convolve(image_float, kernel_5x5, mode='nearest')
     smoothed_manual_uint8 = (smoothed_manual * 255).astype(np.uint8)
-    save_image(smoothed_manual_uint8, root / "woman_gaussian_manual_5x5.png")
+    save_image(smoothed_manual_uint8, root / "runway_gaussian_manual_5x5.png")
 
-    # (d) Apply using OpenCV’s cv.GaussianBlur()
+    # (d) Apply using OpenCV's cv.GaussianBlur()
     smoothed_opencv = cv2.GaussianBlur(image_gray, (5, 5), 2.0)
-    save_image(smoothed_opencv, root / "woman_gaussian_opencv_5x5.png")
+    save_image(smoothed_opencv, root / "runway_gaussian_opencv_5x5.png")
 
     print("Saved:")
     print(" - gaussian_kernel_5x5.txt")
     print(" - gaussian_kernel_51x51_3d.png")
-    print(" - woman_gaussian_manual_5x5.png")
-    print(" - woman_gaussian_opencv_5x5.png")
+    print(" - runway_gaussian_manual_5x5.png")
+    print(" - runway_gaussian_opencv_5x5.png")
 
 if __name__ == "__main__":
     main()
