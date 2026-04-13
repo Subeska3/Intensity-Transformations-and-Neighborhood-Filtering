@@ -42,28 +42,28 @@ def gaussian_filter(image: np.ndarray, sigma: float) -> np.ndarray:
 
 def main() -> None:
     root = Path(__file__).resolve().parent
-    input_path = root / "a1images" / "emma.jpg"
+    input_path = root / "Woman.jpg"
     if not input_path.exists():
-        raise FileNotFoundError(f"Cannot find runway image at {input_path}")
+        raise FileNotFoundError(f"Cannot find image at {input_path}")
 
     image = load_image(input_path)
 
     # Apply mean filter with 3x3 kernel
     mean_filtered = mean_filter(image, 3)
-    save_image(mean_filtered, root / "emma_mean_filter_3x3.png")
+    save_image(mean_filtered, root / "woman_mean_filter_3x3.png")
 
     # Apply median filter with 3x3 kernel
     median_filtered = median_filter(image, 3)
-    save_image(median_filtered, root / "emma_median_filter_3x3.png")
+    save_image(median_filtered, root / "woman_median_filter_3x3.png")
 
     # Apply Gaussian filter with sigma=1.0
     gaussian_filtered = gaussian_filter(image, 1.0)
-    save_image(gaussian_filtered, root / "emma_gaussian_filter_sigma1.png")
+    save_image(gaussian_filtered, root / "woman_gaussian_filter_sigma1.png")
 
     print("Saved:")
-    print(" - emma_mean_filter_3x3.png")
-    print(" - emma_median_filter_3x3.png")
-    print(" - emma_gaussian_filter_sigma1.png")
+    print(" - woman_mean_filter_3x3.png")
+    print(" - woman_median_filter_3x3.png")
+    print(" - woman_gaussian_filter_sigma1.png")
 
 if __name__ == "__main__":
     main()
