@@ -12,35 +12,25 @@ def save_image(image: np.ndarray, path: Path) -> None:
     Image.fromarray(image_uint8, mode="L").save(path)
 
 def histogram_equalization(image: np.ndarray) -> np.ndarray:
-    # image is 0-1
-    # Convert to 0-255 for processing
     img_255 = (image * 255).astype(np.uint8)
-    
-    # Compute histogram
     hist, bins = np.histogram(img_255.flatten(), bins=256, range=[0, 256])
-    
-    # Compute CDF
     cdf = hist.cumsum()
     cdf_normalized = cdf / cdf[-1]  # normalize to 0-1
-    
-    # Equalize
     equalized = np.interp(img_255.flatten(), bins[:-1], cdf_normalized * 255)
     equalized = equalized.reshape(img_255.shape).astype(np.uint8)
-    
-    # Back to 0-1
     return equalized.astype(np.float32) / 255.0
 
 def plot_histograms(original, equalized):
     plt.figure(figsize=(12, 5))
     
     plt.subplot(1, 2, 1)
-    plt.hist(original.ravel(), bins=256, range=(0, 1), color='gray', alpha=0.7)
+    plt.hist(original.ravel(), bins=256, range=(0, 1), color='blue', alpha=0.7)
     plt.title('Original Histogram')
     plt.xlabel('Intensity')
     plt.ylabel('Frequency')
     
     plt.subplot(1, 2, 2)
-    plt.hist(equalized.ravel(), bins=256, range=(0, 1), color='gray', alpha=0.7)
+    plt.hist(equalized.ravel(), bins=256, range=(0, 1), color='orange', alpha=0.7)
     plt.title('Equalized Histogram')
     plt.xlabel('Intensity')
     plt.ylabel('Frequency')

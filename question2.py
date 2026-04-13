@@ -23,13 +23,13 @@ def plot_histograms(original_L, corrected_L, title1, title2):
     plt.figure(figsize=(12, 5))
     
     plt.subplot(1, 2, 1)
-    plt.hist(original_L.ravel(), bins=256, range=(0, 100), color='gray', alpha=0.7)
+    plt.hist(original_L.ravel(), bins=256, range=(0, 100), color='blue', alpha=0.7)
     plt.title(title1)
     plt.xlabel('Intensity')
     plt.ylabel('Count')
     
     plt.subplot(1, 2, 2)
-    plt.hist(corrected_L.ravel(), bins=256, range=(0, 100), color='gray', alpha=0.7)
+    plt.hist(corrected_L.ravel(), bins=256, range=(0, 100), color='red', alpha=0.7)
     plt.title(title2)
     plt.xlabel('Intensity')
     plt.ylabel('Count')
