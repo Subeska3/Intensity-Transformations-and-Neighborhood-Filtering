@@ -43,28 +43,14 @@ def zoom_nearest_neighbor(image: np.ndarray, scale_factor: float) -> np.ndarray:
 
 
 def zoom_bilinear(image: np.ndarray, scale_factor: float) -> np.ndarray:
-    """
-    Zoom an image using bilinear interpolation.
-    
-    Args:
-        image: Input image as numpy array (grayscale or RGB)
-        scale_factor: Scaling factor s in (0, 10]
-    
-    Returns:
-        Zoomed image
-    """
     if scale_factor <= 0 or scale_factor > 10:
         raise ValueError("Scale factor must be in (0, 10]")
-    
     h, w = image.shape[:2]
     new_h, new_w = int(h * scale_factor), int(w * scale_factor)
-    
-    # Use OpenCV's resize for efficiency
     if image.ndim == 2:  # Grayscale
         zoomed = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
     else:  # RGB
         zoomed = cv2.resize(image, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
-    
     return zoomed
 
 

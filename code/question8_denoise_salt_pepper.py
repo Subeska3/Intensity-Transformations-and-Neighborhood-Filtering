@@ -34,13 +34,16 @@ def extract_figure4_from_pdf(pdf_path: Path, out_path: Path) -> bool:
     return False
 
 
-def load_noisy_image(root: Path) -> np.ndarray:
-    candidates = [
+def load_noisy_image(root: Path, filename: str | None = None) -> np.ndarray:
+    candidates = []
+    if filename:
+        candidates.append(root / filename)
+    candidates.extend([
         root / 'question8_input.png',
         root / 'page3_fig4_crop_auto2.png',
         root / 'page3_fig4_crop.png',
         root / 'page4_render.png',
-    ]
+    ])
     for candidate in candidates:
         if candidate.exists():
             image = cv2.imread(str(candidate), cv2.IMREAD_GRAYSCALE)
@@ -50,7 +53,8 @@ def load_noisy_image(root: Path) -> np.ndarray:
     if pdf_path.exists() and fitz is not None:
         if extract_figure4_from_pdf(pdf_path, root / 'question8_input.png'):
             return cv2.imread(str(root / 'question8_input.png'), cv2.IMREAD_GRAYSCALE)
-    raise FileNotFoundError('Cannot find Figure 4 input image. Place the salt-and-pepper image as question8_input.png in the assignment folder.')
+    filename_msg = f' or {filename}' if filename else ''
+    raise FileNotFoundError(f'Cannot find Figure 4 input image{filename_msg}. Place the salt-and-pepper image as question8_input.png in the assignment folder.')
 
 
 def apply_gaussian_smoothing(image: np.ndarray, ksize: int = 5, sigma: float = 1.0) -> np.ndarray:
@@ -74,8 +78,14 @@ def save_comparison(original: np.ndarray, gaussian: np.ndarray, median: np.ndarr
 
 
 def main() -> None:
+    import argparse
+
+    parser = argparse.ArgumentParser(description='Denoise salt-and-pepper image using Gaussian and median filters.')
+    parser.add_argument('--input', '-i', type=str, default=None, help='Input noisy image filename in the assignment folder')
+    args = parser.parse_args()
+
     root = Path(__file__).resolve().parent
-    noisy = load_noisy_image(root)
+    noisy = load_noisy_image(root, args.input)
     gaussian = apply_gaussian_smoothing(noisy, ksize=5, sigma=1.0)
     median = apply_median_filter(noisy, ksize=5)
 
