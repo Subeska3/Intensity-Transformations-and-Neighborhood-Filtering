@@ -1,74 +1,84 @@
-from pathlib import Path
 import numpy as np
-from PIL import Image
+import cv2
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-import cv2
-from scipy import ndimage
 
-def load_image_gray(path: Path) -> np.ndarray:
-    image = Image.open(path).convert("L")
-    return np.asarray(image, dtype=np.uint8)
-
-def save_image(image: np.ndarray, path: Path) -> None:
-    Image.fromarray(image.astype(np.uint8), mode="L").save(path)
-
-def gaussian_kernel(size: int, sigma: float) -> np.ndarray:
-    kernel = np.zeros((size, size))
-    center = size // 2
-    for i in range(size):
-        for j in range(size):
-            x = i - center
-            y = j - center
-            kernel[i, j] = (1 / (2 * np.pi * sigma**2)) * np.exp(-(x**2 + y**2) / (2 * sigma**2))
-    kernel /= kernel.sum()  # normalize
+def get_gaussian_kernel(size, sigma):
+    """
+    (a) Computes a normalized 2D Gaussian kernel using NumPy. 
+    """
+    k = (size - 1) / 2
+    # Create coordinate grid centered at 0
+    x, y = np.mgrid[-k:k+1, -k:k+1]
+    
+    # 2D Gaussian formula: G(x,y) = (1/(2*pi*sigma^2)) * exp(-(x^2 + y^2)/(2*sigma^2))
+    # We ignore the constant factor and normalize at the end for precision.
+    kernel = np.exp(-(x**2 + y**2) / (2 * sigma**2))
+    
+    # Normalize the kernel so the sum of all coefficients is 1 
+    kernel /= kernel.sum()
     return kernel
 
-def visualize_kernel_3d(kernel: np.ndarray, filename: str) -> None:
-    fig = plt.figure()
+# --- (a) Compute 5x5 kernel for sigma = 2 ---
+kernel_5x5 = get_gaussian_kernel(5, 2)
+print("5x5 Gaussian Kernel (sigma=2):\n", kernel_5x5)
+
+# --- (b) Visualize 51x51 kernel as a 3D surface plot ---
+def visualize_kernel_3d(size, sigma):
+    kernel = get_gaussian_kernel(size, sigma)
+    k = (size - 1) / 2
+    x, y = np.mgrid[-k:k+1, -k:k+1]
+
+    fig = plt.figure(figsize=(10, 7))
     ax = fig.add_subplot(111, projection='3d')
-    x = np.arange(kernel.shape[0])
-    y = np.arange(kernel.shape[1])
-    X, Y = np.meshgrid(x, y)
-    ax.plot_surface(X, Y, kernel, cmap='viridis')
-    plt.savefig(filename)
-    plt.close()
-    print(f"3D plot saved as {filename}")
+    # Kernel coefficients represent the height (Z-axis) 
+    surf = ax.plot_surface(x, y, kernel, cmap='viridis', edgecolor='none')
+    
+    ax.set_title(f'3D Surface Plot of {size}x{size} Gaussian Kernel ($\sigma={sigma}$)')
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Kernel Coefficient (Height)')
+    fig.colorbar(surf, ax=ax, shrink=0.5, aspect=5)
+    plt.show()
 
-def main() -> None:
-    root = Path(__file__).resolve().parent
-    input_path = root / "runway.png"
-    if not input_path.exists():
-        raise FileNotFoundError(f"Cannot find image at {input_path}")
+visualize_kernel_3d(51, 2)
 
-    # (a) Compute normalized 5x5 Gaussian kernel for σ = 2
-    kernel_5x5 = gaussian_kernel(5, 2.0)
-    print("5x5 Gaussian kernel for σ=2:")
-    print(kernel_5x5)
-    np.savetxt(root / "gaussian_kernel_5x5.txt", kernel_5x5)
+# --- (c) & (d) Apply Smoothing ---
+# Load the runway image in grayscale [cite: 4, 5]
+# Replace 'runway.png' with your actual file path
+img = cv2.imread('runway.png', cv2.IMREAD_GRAYSCALE)
 
-    # (b) Visualize 51x51 Gaussian kernel as 3D surface plot
-    kernel_51x51 = gaussian_kernel(51, 2.0)
-    visualize_kernel_3d(kernel_51x51, root / "gaussian_kernel_51x51_3d.png")
+if img is None:
+    print("Error: Could not load image. Please check the file path.")
+else:
+    # (c) Manual smoothing using the computed 5x5 kernel [cite: 28]
+    # cv2.filter2D performs the convolution operation
+    manual_blurred = cv2.filter2D(img, -1, kernel_5x5)
 
-    # Load grayscale image
-    image_gray = load_image_gray(input_path)
-    image_float = image_gray.astype(np.float32) / 255.0
+    # (d) Using OpenCV's built-in function [cite: 29]
+    opencv_blurred = cv2.GaussianBlur(img, (5, 5), 2)
 
-    # (c) Apply Gaussian smoothing using manually computed kernel (11x11 for visible effect)
-    smoothed_manual = ndimage.convolve(image_float, gaussian_kernel(11, 3.0), mode='nearest')
-    smoothed_manual_uint8 = (smoothed_manual * 255).astype(np.uint8)
-    save_image(smoothed_manual_uint8, root / "runway_gaussian_manual_11x11.png")
+    # Display results for comparison [cite: 96]
+    plt.figure(figsize=(15, 5))
+    
+    plt.subplot(1, 3, 1)
+    plt.title("Original Grayscale")
+    plt.imshow(img, cmap='gray')
+    plt.axis('off')
 
-    # (d) Apply using OpenCV's cv.GaussianBlur() (11x11 with sigma=3.0)
-    smoothed_opencv = cv2.GaussianBlur(image_gray, (11, 11), 3.0)
-    save_image(smoothed_opencv, root / "runway_gaussian_opencv_11x11.png")
+    plt.subplot(1, 3, 2)
+    plt.title("Manual Gaussian Filter")
+    plt.imshow(manual_blurred, cmap='gray')
+    plt.axis('off')
 
-    print("Saved:")
-    print(" - gaussian_kernel_5x5.txt")
-    print(" - gaussian_kernel_51x51_3d.png")
-    print(" - runway_gaussian_manual_11x11.png")
-    print(" - runway_gaussian_opencv_11x11.png")
+    plt.subplot(1, 3, 3)
+    plt.title("OpenCV Gaussian Blur")
+    plt.imshow(opencv_blurred, cmap='gray')
+    plt.axis('off')
 
-if __name__ == "__main__":
-    main()
+    plt.tight_layout()
+    plt.show()
+
+    # Quantitative Comparison for the report [cite: 96, 97]
+    difference = cv2.absdiff(manual_blurred, opencv_blurred)
+    print(f"Mean absolute difference: {np.mean(difference)}")
