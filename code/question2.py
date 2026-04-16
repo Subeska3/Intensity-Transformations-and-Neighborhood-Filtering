@@ -2,6 +2,7 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 16, 'font.weight': 'bold', 'axes.titleweight': 'bold', 'axes.labelweight': 'bold'})
 
 def load_image(path: Path) -> np.ndarray:
     image = Image.open(path)
@@ -19,7 +20,7 @@ def gamma_correction_lab_L(image_lab: np.ndarray, gamma: float) -> np.ndarray:
     L_corrected = 100 * np.power(L / 100, gamma)
     return np.stack([L_corrected, a, b], axis=-1)
 
-def plot_histograms(original_L, corrected_L, title1, title2):
+def plot_histograms(original_L, corrected_L, title1, title2, output_path):
     plt.figure(figsize=(12, 5))
     
     plt.subplot(1, 2, 1)
@@ -35,14 +36,18 @@ def plot_histograms(original_L, corrected_L, title1, title2):
     plt.ylabel('Count')
     
     plt.tight_layout()
-    plt.savefig('q2_histograms.png')  # Save instead of show
-    print("Histograms saved as q2_histograms.png")
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Histograms saved as {output_path.name}")
 
 def main() -> None:
     root = Path(__file__).resolve().parent
-    input_path = root / "a1images" / "highlights_and_shadows.jpg"
+    input_path = root.parent / "a1images" / "highlights_and_shadows.jpg"
     if not input_path.exists():
         raise FileNotFoundError(f"Cannot find image at {input_path}")
+
+    output_dir = root.parent / "saved_results"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Load image
     image_rgb = load_image(input_path)
@@ -61,15 +66,34 @@ def main() -> None:
     corrected_rgb = np.asarray(corrected_pil, dtype=np.float32) / 255.0
     
     # Save corrected image
-    save_image(corrected_rgb, root / "highlights_and_shadows_gamma_corrected.jpg")
+    save_image(corrected_rgb, output_dir / "highlights_and_shadows_gamma_corrected.jpg")
     
     # Plot histograms of L channels
     original_L = lab_array[:, :, 0]
     corrected_L = lab_corrected[:, :, 0]
-    plot_histograms(original_L, corrected_L, 'Original L Channel Histogram', 'Gamma Corrected L Channel Histogram')
+    hist_path = output_dir / "question2_histograms.png"
+    plot_histograms(original_L, corrected_L, 'Original L Channel Histogram', 'Gamma Corrected L Channel Histogram', hist_path)
+    
+    # Plot comparison grid
+    fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+    axes[0].imshow(image_rgb)
+    axes[0].set_title('Original RGB')
+    axes[0].axis('off')
+    
+    axes[1].imshow(corrected_rgb)
+    axes[1].set_title('Gamma Corrected RGB')
+    axes[1].axis('off')
+    
+    plt.tight_layout()
+    grid_path = output_dir / "question2_comparison_grid.png"
+    plt.savefig(grid_path, dpi=300, bbox_inches='tight')
+    plt.close()
     
     print(f"Gamma value used: {gamma}")
-    print("Saved: highlights_and_shadows_gamma_corrected.jpg")
+    print(f"Saved to {output_dir}:")
+    print(" - highlights_and_shadows_gamma_corrected.jpg")
+    print(f" - {hist_path.name}")
+    print(f" - {grid_path.name}")
 
 if __name__ == "__main__":
     main()

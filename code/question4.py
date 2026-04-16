@@ -2,6 +2,8 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 from scipy import ndimage
+import matplotlib.pyplot as plt
+plt.rcParams.update({'font.size': 16, 'font.weight': 'bold', 'axes.titleweight': 'bold', 'axes.labelweight': 'bold'})
 
 def load_image_gray(path: Path) -> np.ndarray:
     image = Image.open(path).convert("L")
@@ -56,45 +58,88 @@ def gaussian_filter(image: np.ndarray, sigma: float) -> np.ndarray:
 
 def main() -> None:
     root = Path(__file__).resolve().parent
-    input_path = root / "Woman.jpg"
-    if not input_path.exists():
-        raise FileNotFoundError(f"Cannot find image at {input_path}")
+    input_paths_to_try = [
+        root / "Woman.jpg",
+        root.parent / "Woman.jpg",
+        root.parent / "a1images" / "Woman.jpg",
+        root.parent / "woman.avif"
+    ]
+    input_path = next((p for p in input_paths_to_try if p.exists()), None)
+    if not input_path:
+        raise FileNotFoundError("Cannot find Woman.jpg or equivalent image in expected directories.")
+
+    output_dir = root.parent / "saved_results"
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     # Load and convert to grayscale
     image_gray = load_image_gray(input_path)
-    save_image(image_gray, root / "woman_grayscale.png")
+    save_image(image_gray, output_dir / "woman_grayscale.png")
 
     # Apply Otsu thresholding
     threshold = otsu_threshold(image_gray)
     mask = (image_gray >= threshold).astype(np.uint8) * 255
-    save_image(mask, root / "woman_otsu_mask.png")
+    save_image(mask, output_dir / "woman_otsu_mask.png")
 
     # Foreground equalization
     equalized = foreground_equalization(image_gray, mask > 0)
-    save_image(equalized, root / "woman_foreground_equalized.png")
+    save_image(equalized, output_dir / "woman_foreground_equalized.png")
 
     # Convert to float for filtering
     equalized_float = equalized.astype(np.float32) / 255.0
 
     # Apply mean filter with 3x3 kernel
     mean_filtered = mean_filter(equalized_float, 3)
-    save_image((mean_filtered * 255).astype(np.uint8), root / "woman_mean_filter_3x3.png")
+    save_image((mean_filtered * 255).astype(np.uint8), output_dir / "woman_mean_filter_3x3.png")
 
     # Apply median filter with 3x3 kernel
     median_filtered = median_filter(equalized_float, 3)
-    save_image((median_filtered * 255).astype(np.uint8), root / "woman_median_filter_3x3.png")
+    save_image((median_filtered * 255).astype(np.uint8), output_dir / "woman_median_filter_3x3.png")
 
     # Apply Gaussian filter with sigma=1.0
     gaussian_filtered = gaussian_filter(equalized_float, 1.0)
-    save_image((gaussian_filtered * 255).astype(np.uint8), root / "woman_gaussian_filter_sigma1.png")
+    save_image((gaussian_filtered * 255).astype(np.uint8), output_dir / "woman_gaussian_filter_sigma1.png")
 
-    print("Saved:")
+    # Comparison Grid
+    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+    axes = axes.flatten()
+    
+    axes[0].imshow(image_gray, cmap='gray')
+    axes[0].set_title('Grayscale')
+    axes[0].axis('off')
+    
+    axes[1].imshow(mask, cmap='gray')
+    axes[1].set_title('Otsu Mask')
+    axes[1].axis('off')
+    
+    axes[2].imshow(equalized, cmap='gray')
+    axes[2].set_title('Foreground Equalized')
+    axes[2].axis('off')
+    
+    axes[3].imshow((mean_filtered * 255).astype(np.uint8), cmap='gray')
+    axes[3].set_title('Mean Filter (3x3)')
+    axes[3].axis('off')
+    
+    axes[4].imshow((median_filtered * 255).astype(np.uint8), cmap='gray')
+    axes[4].set_title('Median Filter (3x3)')
+    axes[4].axis('off')
+    
+    axes[5].imshow((gaussian_filtered * 255).astype(np.uint8), cmap='gray')
+    axes[5].set_title('Gaussian Filter (sigma=1.0)')
+    axes[5].axis('off')
+    
+    plt.tight_layout()
+    grid_path = output_dir / "question4_comparison_grid.png"
+    plt.savefig(grid_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f"Saved to {output_dir}:")
     print(" - woman_grayscale.png")
     print(" - woman_otsu_mask.png")
     print(" - woman_foreground_equalized.png")
     print(" - woman_mean_filter_3x3.png")
     print(" - woman_median_filter_3x3.png")
     print(" - woman_gaussian_filter_sigma1.png")
+    print(f" - {grid_path.name}")
 
 if __name__ == "__main__":
     main()
