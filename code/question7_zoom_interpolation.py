@@ -87,7 +87,7 @@ def test_zoom_algorithms():
     """
     Test zoom algorithms on provided image pairs.
     """
-    root = Path(__file__).resolve().parent
+    root = Path(__file__).resolve().parent.parent
     test_dir = root / 'a1images' / 'a1q8images'
     
     # Image pairs: (small, large)
@@ -100,12 +100,16 @@ def test_zoom_algorithms():
     
     results = []
     
+    print("\n" + "="*80)
+    print(f"{'Image Pair':<30} | {'Scale':<10} | {'NN SSD':<12} | {'Bilinear SSD':<12}")
+    print("-" * 80)
+
     for small_name, large_name in image_pairs:
         small_path = test_dir / small_name
         large_path = test_dir / large_name
         
         if not small_path.exists() or not large_path.exists():
-            print(f"Skipping {small_name} - {large_name}: files not found")
+            print(f"Skipping {small_name:<21} | File not found")
             continue
         
         # Load images
@@ -114,9 +118,9 @@ def test_zoom_algorithms():
         
         # Convert to grayscale if RGB
         if small_img.ndim == 3:
-            small_img = np.mean(small_img, axis=2).astype(np.uint8)
+            small_img = cv2.cvtColor(small_img, cv2.COLOR_RGB2GRAY)
         if large_img.ndim == 3:
-            large_img = np.mean(large_img, axis=2).astype(np.uint8)
+            large_img = cv2.cvtColor(large_img, cv2.COLOR_RGB2GRAY)
         
         # Calculate required scale factor
         scale_factor = large_img.shape[0] / small_img.shape[0]
@@ -134,39 +138,29 @@ def test_zoom_algorithms():
             'pair': f"{small_name} -> {large_name}",
             'scale_factor': scale_factor,
             'ssd_nn': ssd_nn,
-            'ssd_bilinear': ssd_bilinear,
-            'small_size': small_img.shape,
-            'large_size': large_img.shape
+            'ssd_bilinear': ssd_bilinear
         })
         
-        print(f"\n{small_name} -> {large_name}")
-        print(f"  Scale factor: {scale_factor:.2f}x")
-        print(f"  Small size: {small_img.shape} -> Large size: {large_img.shape}")
-        print(f"  Normalized SSD (Nearest-Neighbor): {ssd_nn:.6f}")
-        print(f"  Normalized SSD (Bilinear): {ssd_bilinear:.6f}")
-        print(f"  Bilinear is {ssd_nn/ssd_bilinear:.2f}x better")
+        print(f"{small_name + ' -> ' + large_name:<30} | {scale_factor:<10.2f} | {ssd_nn:<12.6f} | {ssd_bilinear:<12.6f}")
         
         # Save zoomed images for visualization
-        Image.fromarray(zoomed_nn).save(root / f"zoomed_nn_{small_name}")
-        Image.fromarray(zoomed_bilinear).save(root / f"zoomed_bilinear_{small_name}")
+        output_dir = root / 'saved_results'
+        output_dir.mkdir(exist_ok=True)
+        Image.fromarray(zoomed_nn).save(output_dir / f"zoomed_nn_{small_name}")
+        Image.fromarray(zoomed_bilinear).save(output_dir / f"zoomed_bilinear_{small_name}")
     
     # Summary
-    print("\n" + "="*60)
-    print("SUMMARY")
-    print("="*60)
-    for result in results:
-        print(f"\n{result['pair']}")
-        print(f"  Nearest-Neighbor SSD: {result['ssd_nn']:.6f}")
-        print(f"  Bilinear SSD: {result['ssd_bilinear']:.6f}")
-        improvement = (result['ssd_nn'] - result['ssd_bilinear']) / result['ssd_nn'] * 100
-        print(f"  Improvement: {improvement:.2f}%")
-    
-    # Average improvement
-    avg_nn = np.mean([r['ssd_nn'] for r in results])
-    avg_bilinear = np.mean([r['ssd_bilinear'] for r in results])
-    print(f"\nAverage Normalized SSD (Nearest-Neighbor): {avg_nn:.6f}")
-    print(f"Average Normalized SSD (Bilinear): {avg_bilinear:.6f}")
-    print(f"Average improvement: {(avg_nn - avg_bilinear) / avg_nn * 100:.2f}%")
+    if results:
+        avg_nn = np.mean([r['ssd_nn'] for r in results])
+        avg_bilinear = np.mean([r['ssd_bilinear'] for r in results])
+        avg_improvement = (avg_nn - avg_bilinear) / avg_nn * 100
+        
+        print("-" * 80)
+        print(f"{'AVERAGE':<30} | {'-':<10} | {avg_nn:<12.6f} | {avg_bilinear:<12.6f}")
+        print("="*80)
+        print(f"\nBilinear interpolation provides a {avg_improvement:.2f}% improvement over Nearest-Neighbor on average.")
+    else:
+        print("No results computed.")
 
 
 if __name__ == "__main__":

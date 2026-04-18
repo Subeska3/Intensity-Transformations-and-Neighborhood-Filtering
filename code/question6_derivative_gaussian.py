@@ -18,26 +18,50 @@ def get_gaussian_kernel(size, sigma):
     kernel /= kernel.sum()
     return kernel, x, y
 
+def plot_3d_dog_kernel(save_path=None):
+    h_size = 25
+    x = np.arange(-h_size, h_size + 1, 1)
+    y = np.arange(-h_size, h_size + 1, 1)
+    Y, X = np.meshgrid(x, y)
+    sigma = 10 
+    g_51 = 1 / (2 * np.pi * sigma**2) * np.exp(-(X**2 + Y**2) / (2 * sigma**2))
+    g_51 = g_51 / np.sum(g_51)
+    gx_51 = -(X / sigma**2) * g_51
+    fig = plt.figure(figsize=(5, 5))
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot_surface(X, Y, gx_51, cmap='jet', rstride=2, cstride=2, linewidth=0.1, antialiased=True)
+    ax.view_init(elev=25, azim=-45)
+    plt.suptitle('51×51 Derivative-of-Gaussian Kernel (x-direction)', fontsize=13)
+    plt.tight_layout()
+    if save_path:
+        plt.savefig(save_path)
+    plt.close(fig)
+
 def get_derivative_gaussian_kernels(size, sigma):
-    """
-    Computes the derivative of Gaussian kernels in x and y directions.
-    """
-    gaussian_kernel, x, y = get_gaussian_kernel(size, sigma)
-    kernel_x = - (x / sigma**2) * gaussian_kernel
-    kernel_y = - (y / sigma**2) * gaussian_kernel
-    return kernel_x, kernel_y
+    h_size = size // 2
+    x = np.arange(-h_size, h_size + 1, 1)
+    y = np.arange(-h_size, h_size + 1, 1)
+    X, Y = np.meshgrid(x, y)
+    g = 1 / (2 * np.pi * sigma**2) * np.exp(-(X**2 + Y**2) / (2 * sigma**2))
+    g = g / np.sum(g)
+    gx = -(X / sigma**2) * g
+    gy = -(Y / sigma**2) * g
+    gx = gx / np.sum(np.abs(gx))
+    gy = gy / np.sum(np.abs(gy))
+    return gx, gy
 
 def main():
     # Load the grayscale image
     root = Path(__file__).resolve().parent
-    image_path = root / "woman_grayscale.png"
-    if not image_path.exists():
-        print("Grayscale image not found, converting woman.avif to grayscale.")
-        img_color = cv2.imread(str(root / "woman.avif"))
-        img_gray = cv2.cvtColor(img_color, cv2.COLOR_BGR2GRAY)
-        cv2.imwrite(str(image_path), img_gray)
-    else:
-        img_gray = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    
+    # Draw and save the 3D plot of the 51x51 kernel as requested
+    plot_3d_dog_kernel(root / "dog_kernel_3d.png")
+    
+    image_path = root.parent / "a1images" / "brain_proton_density_slice.png"
+    img_gray = cv2.imread(str(image_path), cv2.IMREAD_GRAYSCALE)
+    if img_gray is None:
+        print(f"Failed to load image: {image_path}")
+        return
 
     # Compute derivative kernels for sigma=2, 5x5
     kernel_x, kernel_y = get_derivative_gaussian_kernels(5, 2)

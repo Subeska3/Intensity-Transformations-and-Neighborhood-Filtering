@@ -40,6 +40,7 @@ def load_noisy_image(root: Path, filename: str | None = None) -> np.ndarray:
         candidates.append(root / filename)
     candidates.extend([
         root / 'question8_input.png',
+        root.parent / 'saved_results' / 'question8_input.png',
         root / 'page3_fig4_crop_auto2.png',
         root / 'page3_fig4_crop.png',
         root / 'page4_render.png',
@@ -89,12 +90,34 @@ def main() -> None:
     gaussian = apply_gaussian_smoothing(noisy, ksize=5, sigma=1.0)
     median = apply_median_filter(noisy, ksize=5)
 
-    cv2.imwrite(str(root / 'question8_original.png'), noisy)
-    cv2.imwrite(str(root / 'question8_gaussian.png'), gaussian)
-    cv2.imwrite(str(root / 'question8_median.png'), median)
-    save_comparison(noisy, gaussian, median, root / 'question8_comparison.png')
+    output_dir = root.parent / 'saved_results'
+    output_dir.mkdir(exist_ok=True)
 
-    print('Saved: question8_original.png, question8_gaussian.png, question8_median.png, question8_comparison.png')
+    cv2.imwrite(str(output_dir / 'question8_original.png'), noisy)
+    cv2.imwrite(str(output_dir / 'question8_gaussian.png'), gaussian)
+    cv2.imwrite(str(output_dir / 'question8_median.png'), median)
+    save_comparison(noisy, gaussian, median, output_dir / 'question8_comparison.png')
+
+    print(f'Saved results to {output_dir}')
+
+    import matplotlib.pyplot as plt
+    f = noisy
+    g_median = median
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+    ax[0].imshow(f, cmap='gray', vmin=0, vmax=255)
+    ax[0].set_title('Corrupted Image (Salt & Pepper)')
+    ax[0].axis('off')
+    ax[1].imshow(g_median, cmap='gray', vmin=0, vmax=255)
+    ax[1].set_title('Median Filtering (5×5)')
+    ax[1].axis('off')
+    plt.tight_layout()
+    
+    # Save the figure as well for record
+    fig.savefig(output_dir / 'question8_matplotlib_comparison.png')
+    print(f'Saved: {output_dir / "question8_matplotlib_comparison.png"}')
+    
+    # plt.show() # Commented out for automated environment, use fig.savefig instead
 
     # Print some statistics
     print('Original stats:', noisy.min(), noisy.max(), noisy.mean(), noisy.std())

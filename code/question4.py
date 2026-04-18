@@ -59,14 +59,13 @@ def gaussian_filter(image: np.ndarray, sigma: float) -> np.ndarray:
 def main() -> None:
     root = Path(__file__).resolve().parent
     input_paths_to_try = [
-        root / "Woman.jpg",
-        root.parent / "Woman.jpg",
-        root.parent / "a1images" / "Woman.jpg",
-        root.parent / "woman.avif"
+        root / "woman_standing.jpg",
+        root.parent / "woman_standing.jpg",
+        root.parent / "a1images" / "woman_standing.jpg"
     ]
     input_path = next((p for p in input_paths_to_try if p.exists()), None)
     if not input_path:
-        raise FileNotFoundError("Cannot find Woman.jpg or equivalent image in expected directories.")
+        raise FileNotFoundError("Cannot find woman_standing.jpg in expected directories.")
 
     output_dir = root.parent / "saved_results"
     output_dir.mkdir(parents=True, exist_ok=True)

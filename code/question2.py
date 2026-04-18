@@ -1,6 +1,7 @@
 from pathlib import Path
 import numpy as np
 from PIL import Image
+import cv2 as cv
 import matplotlib.pyplot as plt
 plt.rcParams.update({'font.size': 16, 'font.weight': 'bold', 'axes.titleweight': 'bold', 'axes.labelweight': 'bold'})
 
@@ -15,30 +16,9 @@ def save_image(image: np.ndarray, path: Path) -> None:
 def gamma_correction_lab_L(image_lab: np.ndarray, gamma: float) -> np.ndarray:
     if gamma <= 0:
         raise ValueError("Gamma must be a positive value.")
-    # image_lab is in LAB, L is first channel, scaled 0-100
     L, a, b = image_lab[:, :, 0], image_lab[:, :, 1], image_lab[:, :, 2]
     L_corrected = 100 * np.power(L / 100, gamma)
     return np.stack([L_corrected, a, b], axis=-1)
-
-def plot_histograms(original_L, corrected_L, title1, title2, output_path):
-    plt.figure(figsize=(12, 5))
-    
-    plt.subplot(1, 2, 1)
-    plt.hist(original_L.ravel(), bins=256, range=(0, 100), color='blue', alpha=0.7)
-    plt.title(title1)
-    plt.xlabel('Intensity')
-    plt.ylabel('Count')
-    
-    plt.subplot(1, 2, 2)
-    plt.hist(corrected_L.ravel(), bins=256, range=(0, 100), color='red', alpha=0.7)
-    plt.title(title2)
-    plt.xlabel('Intensity')
-    plt.ylabel('Count')
-    
-    plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    print(f"Histograms saved as {output_path.name}")
 
 def main() -> None:
     root = Path(__file__).resolve().parent
@@ -68,12 +48,35 @@ def main() -> None:
     # Save corrected image
     save_image(corrected_rgb, output_dir / "highlights_and_shadows_gamma_corrected.jpg")
     
-    # Plot histograms of L channels
-    original_L = lab_array[:, :, 0]
-    corrected_L = lab_corrected[:, :, 0]
-    hist_path = output_dir / "question2_histograms.png"
-    plot_histograms(original_L, corrected_L, 'Original L Channel Histogram', 'Gamma Corrected L Channel Histogram', hist_path)
+    # Convert to grayscale for histogram comparison
+    img_uint8 = (image_rgb * 255.0).astype(np.uint8)
+    img_corrected_uint8 = (corrected_rgb * 255.0).astype(np.uint8)
     
+    img_gray = cv.cvtColor(img_uint8, cv.COLOR_RGB2GRAY)
+    img_corrected_gray = cv.cvtColor(img_corrected_uint8, cv.COLOR_RGB2GRAY)
+    
+    hist_original = np.bincount(img_gray.ravel(), minlength=256)
+    hist_corrected = np.bincount(img_corrected_gray.ravel(), minlength=256)
+
+    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+    ax[0].bar(range(256), hist_original, color='blue', alpha=0.7)
+    ax[0].set_title('Intensity vs Frequency — Original')
+    ax[0].set_xlabel('Pixel Intensity')
+    ax[0].set_ylabel('Frequency')
+    ax[0].set_xlim([0, 255])
+    
+    ax[1].bar(range(256), hist_corrected, color='red', alpha=0.7)
+    ax[1].set_title(f'Intensity vs Frequency (γ = {gamma})')
+    ax[1].set_xlabel('Pixel Intensity')
+    ax[1].set_ylabel('Frequency')
+    ax[1].set_xlim([0, 255])
+    plt.tight_layout()
+    
+    hist_path = output_dir / "question2_histograms.png"
+    plt.savefig(hist_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+
     # Plot comparison grid
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
     axes[0].imshow(image_rgb)

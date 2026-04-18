@@ -3,23 +3,10 @@ import numpy as np
 from pathlib import Path
 
 def unsharp_mask(image, sigma=1.0, strength=1.5):
-    """
-    Apply unsharp masking to sharpen the image.
-    """
-    # Apply Gaussian blur
     blurred = cv2.GaussianBlur(image, (0, 0), sigma)
-
-    # Compute the mask (high-pass filter)
-    # mask = original - blurred
     mask = cv2.subtract(image.astype(np.float32), blurred.astype(np.float32))
-
-    # Add the mask back to the original image
-    # sharpened = original + strength * mask
     sharpened = cv2.addWeighted(image.astype(np.float32), 1.0, mask, strength, 0)
-
-    # Clip to valid range and convert back to uint8
     sharpened = np.clip(sharpened, 0, 255).astype(np.uint8)
-
     return sharpened
 
 def main():
